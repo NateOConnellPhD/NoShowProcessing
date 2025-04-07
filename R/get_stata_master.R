@@ -23,7 +23,7 @@ create_stata_master <- function(date = NULL, overwrite_master = FALSE) {
 
   # Define file paths
   data_folder <- "stata_data/"
-  xlsx_file <- paste0("data/datarequest_1585_", date, ".xlsx")
+  xlsx_file <- paste0("stata_data/datarequest_1585_", date, ".xlsx")
   master_file <- "processed_data/master.rda"
 
   # Check for existing master file
