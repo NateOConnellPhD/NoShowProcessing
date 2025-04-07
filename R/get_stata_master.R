@@ -20,25 +20,25 @@ create_stata_master <- function(date = NULL, overwrite_master = FALSE) {
     recent_date <- if (dow == 1) today - 3 else today - 1
     date <- format(recent_date, "%Y%m%d")
   }
-  
+
   # Define file paths
   data_folder <- "stata_data/"
   xlsx_file <- paste0("data/datarequest_1585_", date, ".xlsx")
   master_file <- "processed_data/master.rda"
-  
+
   # Check for existing master file
   if (file.exists(master_file) && !overwrite_master) {
     stop("master.rda already exists. Set `overwrite_master = TRUE` to overwrite it.")
   }
-  
+
   # Get list of all .dta files
   dta_files <- list.files(path = data_folder, pattern = "\\.dta$", full.names = TRUE)
   data_list <- lapply(dta_files, read_dta)
   names(data_list) <- sub("\\.dta$", "", basename(dta_files))
-  
+
   # Read Excel data
   df_old <- readxl::read_xlsx(xlsx_file)
-  
+
   # Build master_today (date-specific)
   master_today <- list()
   master_today$df <- df_old
@@ -52,7 +52,7 @@ create_stata_master <- function(date = NULL, overwrite_master = FALSE) {
   master_today$eligibles <- data_list[[paste0(date, "_import_new")]]
   master_today$prior_combine <- data_list[[paste0(as.character(as.numeric(date) - 1), "_import_combined")]]
   master_today$prior_review <- data_list[[paste0(date, "_import_priorreviewed")]]
-  
+
   # Build cumulative master
   master <- list()
   master$eligibles <- data_list$eligibles
@@ -62,10 +62,9 @@ create_stata_master <- function(date = NULL, overwrite_master = FALSE) {
     resched = data_list$ineligibles_resched
   )
   master$full <- data_list$full_import_list
-  
+
   # Save
   saveRDS(master_today, file = paste0("processed_data/", date, "_master.rda"))
   saveRDS(master, file = master_file)
 }
-library(haven)
-create_stata_master()
+
