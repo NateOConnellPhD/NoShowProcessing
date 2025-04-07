@@ -19,42 +19,49 @@
 #'
 #' @return No return value. Saves processed data to disk.
 #' @export
-#' 
-run_program = function(){
-  
-  master = readRDS("processed_data/master.rda")
-  master_prev = readRDS("processed_data/20250404_master.rda")
-  
-  ##### Set up todays list  ############
-  master_today = list()
-  
+#'
+run_program <- function() {
+  # Load latest master_prev based on file naming pattern
+  master_files <- list.files("processed_data/", pattern = "_master\\.rda$", full.names = TRUE)
+
+  # Extract date from filename and find the most recent one
+  file_dates <- stringr::str_extract(master_files, "\\d{8}")  # match YYYYMMDD
+  latest_index <- which.max(as.Date(file_dates, format = "%Y%m%d"))
+  master_prev <- readRDS(master_files[latest_index])
+
+  # Load current master
+  master <- readRDS("processed_data/master.rda")
+
+  ##### Set up today's list ############
+  master_today <- list()
+
   ###### Import data ##########
-  df = import_df()
-  
+  df <- import_df()
+
   ###### Process Data (fix phone numbers, label sites, and remove duplicates) #########
-  df_proc = process_df(df)
-  master_today$df_proc = df_proc
-  
-  ###### Get 7 day data #########
-  df_7day = get_7_day(df_proc)
-  master_today$df_7day = df_7day
-  
+  df_proc <- process_df(df)
+  master_today$df_proc <- df_proc
+
+  ###### Get 7-day data #########
+  df_7day <- get_7_day(df_proc)
+  master_today$df_7day <- df_7day
+
   ###### Get ineligibles ########
-  df_inels = get_inels(df_7day)
-  master_today$inel = df_inels
-  
-  ######### Get Eligible Patients to import ###########
-  df_els = get_eligible(df_7day)
-  master_today$eligibles = df_els
-  
-  ###### Merge and  Clean ###############
-  df_merge = merge_and_clean(master_today, master_prev)
-  master_today$prior_combine = df_merge$prior_combined
-  master_today$prior_review = df_merge$prior_review
-  
-  ########## Post_cleaning ##############
-  new_master = new_master(master_today)
-  
-  ######### Save Files #############
+  df_inels <- get_inels(df_7day)
+  master_today$inel <- df_inels
+
+  ######### Get eligible patients to import ###########
+  df_els <- get_eligible(df_7day)
+  master_today$eligibles <- df_els
+
+  ###### Merge and clean ###########
+  df_merge <- merge_and_clean(master_today, master_prev)
+  master_today$prior_combine <- df_merge$prior_combined
+  master_today$prior_review <- df_merge$prior_review
+
+  ########## Post-cleaning ##############
+  new_master <- new_master(master_today)
+
+  ######### Save files #############
   save_files(master_today, master)
 }
