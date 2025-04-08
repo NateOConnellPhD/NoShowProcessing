@@ -1,4 +1,3 @@
-edit this to take supplied date in same fashion as all else
 
   #' Merge and Clean Daily and Prior Data
   #'
