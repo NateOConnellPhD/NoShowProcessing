@@ -1,19 +1,19 @@
 #' Compare Two Datasets on Specified Columns
 #'
-#' This function compares two datasets on a predefined set of key columns 
-#' (`home_phone`, `twilio_phone`, `site`, `visitstatus`) after stripping 
+#' This function compares two datasets on a predefined set of key columns
+#' (`home_phone`, `twilio_phone`, `site`, `visitstatus`) after stripping
 #' all labels, normalizing data types, and replacing empty strings with NA.
 #'
-#' It is particularly useful for checking whether two processed datasets 
-#' (e.g., STATA vs R output) are equivalent in structure and content, 
+#' It is particularly useful for checking whether two processed datasets
+#' (e.g., STATA vs R output) are equivalent in structure and content,
 #' despite potential formatting or label-related differences.
 #'
 #' @param df1 First data frame to compare.
 #' @param df2 Second data frame to compare.
-#' @param show_diff Logical. If TRUE, will return full list of differences 
+#' @param show_diff Logical. If TRUE, will return full list of differences
 #'        (currently commented out in implementation).
 #'
-#' @return A printed message to the console indicating whether the datasets match 
+#' @return A printed message to the console indicating whether the datasets match
 #'         on the specified variables.
 #'
 #' @importFrom haven is.labelled zap_labels
@@ -21,26 +21,26 @@
 #' @importFrom tibble tibble
 #' @importFrom purrr map_lgl
 #' @export
-#' 
+#'
 compare_datasets <- function(df1, df2, show_diff = FALSE) {
-  
+
   myVars= c("home_phone", "twilio_phone", "site", "visitstatus")
   df1 = df1[myVars]
   df2 = df2[myVars]
-  
+
   clean_df <- function(df) {
     df[] <- lapply(df, function(x) {
       # Remove all attributes except core structure
       attributes(x) <- attributes(x)[names(attributes(x)) %in% c("names", "dim", "dimnames")]
-      
+
       # Remove labels (Hmisc or haven)
       if (haven::is.labelled(x)) x <- haven::zap_labels(x)
       if (!is.null(attr(x, "label"))) attr(x, "label") <- NULL
       if (!is.null(attr(x, "format.stata"))) attr(x, "format.stata") <- NULL
-      
+
       # Convert factors to character
       if (is.factor(x)) x <- as.character(x)
-      
+
       # Convert "" to NA
       if (is.character(x)) {
         x[x == ""] <- NA
@@ -50,22 +50,24 @@ compare_datasets <- function(df1, df2, show_diff = FALSE) {
           x <- try_date
         }
       }
-      
+
       # Normalize numerics
       if (is.numeric(x) || is.integer(x)) x <- as.numeric(x)
-      
+
       return(x)
     })
     df
   }
-  
+
+  df1_clean = clean_df(df1)
+  df2_clean =clean_df(df2)
+
   # Ensure same column names
   if (!identical(names(df1_clean), names(df2_clean))) {
     stop("Column names do not match.")
   }
-  df1_clean = clean_df(df1)
-  df2_clean =clean_df(df2)
-  
+
+
   # Relaxed comparison using all.equal
   comparison <- tibble::tibble(
     column = names(df1_clean),
@@ -82,7 +84,7 @@ compare_datasets <- function(df1, df2, show_diff = FALSE) {
       }, error = function(e) FALSE)
     })
   )
-  
+
   # if (show_diff) {
   #   diffs <- purrr::map(names(df1_clean), function(nm) {
   #     if (!isTRUE(all.equal(df1_clean[[nm]], df2_clean[[nm]], check.attributes = FALSE))) {
@@ -99,7 +101,7 @@ compare_datasets <- function(df1, df2, show_diff = FALSE) {
   # } else {
   #   return(comparison)
   # }
-  
+
   if(sum(comparison$identical) == 4){
     message("✅ Datasets Match")
     #return("Datasets Match")
@@ -107,5 +109,5 @@ compare_datasets <- function(df1, df2, show_diff = FALSE) {
     message("✅ Datasets Match")
     #return("Datasets do not match")
   }
-  
-} 
+
+}
