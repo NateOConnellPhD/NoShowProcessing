@@ -1,43 +1,60 @@
-#' Load All .dta Reference Files from data_check/
+#' Load Most Recent Check Data from `data_check/` (with Import Combined Logic)
 #'
-#' This function loads all `.dta` files from the `data_check/` folder, including both
-#' files prefixed with a date (e.g., "20250408_all.dta") and static filenames
-#' (e.g., "eligibles.dta", "full_import_list.dta").
+#' Loads the most recent date-prefixed `.dta` files (only one per suffix), except for
+#' `*_import_combined.dta` which always pulls from the previous weekday.
+#' Also includes all static `.dta` files (no date prefix).
 #'
-#' If a `date` is supplied, only date-prefixed files from that date and the non-date files
-#' will be returned. If NULL, all `.dta` files are loaded regardless of prefix.
-#'
-#' @param date Optional string in "YYYYMMDD" format. If supplied, loads only that day's files
-#'             plus any non-prefixed .dta files. If NULL, loads all .dta files in folder.
-#'
-#' @return A named list of data frames.
+#' @return Named list of data frames.
 #' @export
-#'
-#' @examples
-#' files <- load_check_data("20250408")
-#' names(files)
-#' head(files$`20250408_all`)
-
-load_check_data <- function(date = NULL) {
+load_check_data <- function() {
   require(haven)
+  require(stringr)
+  require(dplyr)
+  require(lubridate)
 
-  # Build pattern to match files
-  if (!is.null(date)) {
-    prefix_pattern <- paste0("^(", date, "_.*|[^0-9].*)\\.dta$")
-  } else {
-    prefix_pattern <- "\\.dta$"  # Load everything
-  }
+  files <- list.files("data_check/", pattern = "\\.dta$", full.names = TRUE)
+  if (length(files) == 0) stop("No .dta files found in 'data_check/'.")
 
-  # List matching .dta files
-  dta_files <- list.files("data_check/", pattern = prefix_pattern, full.names = TRUE)
+  # Parse filenames
+  file_info <- tibble::tibble(
+    path = files,
+    file = basename(files),
+    match = str_match(basename(files), "^(\\d{8})_(.+)\\.dta$")
+  ) %>%
+    mutate(
+      has_date = !is.na(match[, 1]),
+      date = if_else(has_date, as.Date(match[, 2], format = "%Y%m%d"), as.Date(NA)),
+      suffix = if_else(has_date, match[, 3], NA_character_),
+      name = if_else(has_date, paste0(match[, 2], "_", match[, 3]), tools::file_path_sans_ext(file))
+    )
 
-  if (length(dta_files) == 0) {
-    stop("No matching .dta files found in 'data_check/'", if (!is.null(date)) paste(" for date:", date))
-  }
+  today <- Sys.Date()
+  prev_weekday <- today - ifelse(wday(today) == 2, 3, 1)  # Monday -> Friday logic
+  prev_string <- format(prev_weekday, "%Y%m%d")
 
-  # Load and name
-  data_list <- lapply(dta_files, read_dta)
-  names(data_list) <- sub("\\.dta$", "", basename(dta_files))
+  # Split files
+  dated <- file_info %>% filter(has_date)
+  static <- file_info %>% filter(!has_date)
 
-  return(data_list)
+  # For all suffixes EXCEPT "import_combined", grab the most recent by suffix
+  latest_dated <- dated %>%
+    filter(suffix != "import_combined") %>%
+    group_by(suffix) %>%
+    filter(date == max(date)) %>%
+    ungroup()
+
+  # For import_combined: pull only the one from the correct previous weekday
+  import_combined <- dated %>%
+    filter(suffix == "import_combined", date == prev_weekday)
+
+  # Combine dated + static file rows
+  final_files <- bind_rows(latest_dated, import_combined, static)
+
+  # Load all selected files
+  result <- purrr::set_names(
+    lapply(final_files$path, haven::read_dta),
+    final_files$name
+  )
+
+  return(result)
 }
