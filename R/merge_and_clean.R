@@ -35,7 +35,7 @@
     today_date <- if (is.null(date)) Sys.Date() else as.Date(date, format = "%Y%m%d")
     date_string <- format(today_date, "%Y%m%d")
 
-    day_of_week <- wday(today, week_start = 1) # Monday = 1, Sunday = 7
+    day_of_week <- wday(today_date, week_start = 1) # Monday = 1, Sunday = 7
 
     # Get previous day(s)
     friday_date <- today_date - 3
