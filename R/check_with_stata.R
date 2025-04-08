@@ -80,7 +80,7 @@ check_with_stata <- function(date = NULL) {
   master_today$eligibles <- df_els
 
   message("🔗 Merging today's data with prior reviewed data...")
-  df_merge <- merge_and_clean(master_today, master_prev)
+  df_merge <- merge_and_clean(master_today, master_prev, date= date_string)
   master_today$prior_combine <- df_merge$prior_combined
   master_today$prior_review <- df_merge$prior_review
 
