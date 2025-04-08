@@ -1,65 +1,68 @@
-#' Gets eligible patients based on 7 day visit criteria
+#' Get Eligible Patients Based on 7-Day No-Show Criteria
 #'
-#' Processes data further and reduces dataset to patients eligibility based on their appoitnment having occured 7 days prior. 
-#' @param df the name of the dataset produces from "process_data()" function
-#' @return Dataframe containing only patients with missed visits from exactly 7 days ago
-#' @examples 
-#' get_7_day(df)
+#' Processes and filters the dataset to identify patients who are eligible
+#' for follow-up based on a missed visit that occurred exactly 7 days prior
+#' to a specified date.
+#'
+#' @param df A data frame created by the `process_df()` function.
+#' @param date A string date in "YYYYMMDD" format. If not supplied, defaults to today’s date.
+#'
+#' @return A data frame of eligible patients whose no-show occurred exactly 7 days ago.
+#' @examples
+#' get_7_day(df)  # Uses today's date
+#' get_7_day(df, date = "20250405")  # Uses April 5, 2025 as reference
 #' @export
-
-get_7_day = function(df){
+get_7_day <- function(df, date = NULL) {
+  # Resolve the reference date
+  if (is.null(date)) {
+    today <- Sys.Date()
+  } else {
+    today <- as.Date(date, format = "%Y%m%d")
+    if (is.na(today)) stop("Date must be in 'YYYYMMDD' format.")
+  }
+  
   df <- df %>%
     group_by(home_phone) %>%
-    mutate(dup_3wk_house_tag = if_else(n() > 1, 1L, 0L),
-           dup_3wk_house_id = row_number()) %>%
-    ungroup() %>%
-    mutate(dup_3wk_house_id = if_else(dup_3wk_house_tag == 0, 0L, dup_3wk_house_id))
+    mutate(
+      dup_3wk_house_tag = if_else(n() > 1, 1L, 0L),
+      dup_3wk_house_id = row_number(),
+      dup_3wk_house_id = if_else(dup_3wk_house_tag == 0, 0L, dup_3wk_house_id)
+    ) %>%
+    ungroup()
   
   # --- Duplicate patients with close succession no-shows ---
   df <- df %>%
-    # Create a new variable "patient_id" that is wakeone_mrn unless it's NA, then use pat_first_name
     mutate(patient_id = coalesce(as.character(wakeone_mrn), pat_first_name)) %>%
-    # Group by home_phone and the new patient_id
     group_by(home_phone, patient_id) %>%
-    arrange(datenoshow, timenoshow) %>%  # sort within group by no-show dates and times
+    arrange(datenoshow, timenoshow) %>%
     mutate(
       dup_pat_tag = if_else(n() > 1, 1L, 0L),
-      quick_dup_pat = row_number()          # sequential number within the group
+      quick_dup_pat = if_else(dup_pat_tag == 0, 0L, row_number())
     ) %>%
-    ungroup() %>%
-    mutate(
-      quick_dup_pat = if_else(dup_pat_tag == 0, 0L, quick_dup_pat)
-    )
+    ungroup()
   
-  # --- Calculate the number of days difference between the first two no-show dates ---
+  # --- Calculate time gap between first and second no-shows ---
   df <- df %>%
     group_by(home_phone, patient_id) %>%
     arrange(datenoshow, timenoshow) %>%
     mutate(noshowdiff = if_else(n() >= 2, as.numeric(nth(datenoshow, 2) - first(datenoshow)), NA_real_)) %>%
-    ungroup()
-  
-  # --- For groups where the gap between the first and second no-shows is > 7 days, reset quick_dup_pat to 0 ---
-  df <- df %>%
+    ungroup() %>%
     mutate(quick_dup_pat = if_else(!is.na(noshowdiff) & noshowdiff > 7, 0L, quick_dup_pat))
   
-  # --- Within each duplicate patient group with quick_dup_pat == 1 and noshowdiff < 8, 
-  # update next_wcv_date to be the second no-show date
+  # --- Update nextwcvdate for certain patients ---
   df <- df %>%
     group_by(home_phone, pat_first_name) %>%
     mutate(nextwcvdate = if_else(quick_dup_pat == 1 & !is.na(noshowdiff) & noshowdiff < 8,
-                                   nth(datenoshow, 2),
-                                   nextwcvdate)) %>%
+                                 nth(datenoshow, 2),
+                                 nextwcvdate)) %>%
     ungroup()
   
-  # --- Revert sorting order to home_phone, date_no_show, time_no_show ---
-  df <- df %>% arrange(home_phone, datenoshow, timenoshow) 
-  
-  # --- Subset the data to those records where date_no_show is exactly 7 days before "today" ---
-  # You can replace Sys.Date() with a specific date if needed
-  today <- Sys.Date()
-  df <- df %>% filter(datenoshow == (today - 7))
-  
-  df = df %>% select(!patient_id)
+  # --- Final filtering ---
+  df <- df %>%
+    arrange(home_phone, datenoshow, timenoshow) %>%
+    filter(datenoshow == (today - 7)) %>%
+    select(-patient_id)
   
   return(df)
 }
+

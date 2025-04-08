@@ -1,4 +1,3 @@
-
 #' Get Eligible Patients for Outreach
 #'
 #' Filters and formats a dataset of potential outreach patients to create a REDCap-ready import file.
@@ -10,6 +9,7 @@
 #'   - `completed_wcv_type`, `next_wcv_type`
 #'   - `language`, `home_phone`, `cell_phone`
 #'   - Other optional duplicate tracking variables
+#' @param date Optional reference date in "YYYYMMDD" format. If not supplied, uses today's date.
 #'
 #' @return A data frame of patients eligible for import into REDCap, with:
 #' \describe{
@@ -42,84 +42,56 @@
 #' }
 #'
 #' @export
-
-get_eligible = function(df){
+get_eligible <- function(df, date = NULL) {
   
-  # ---- Assume df_7day is created as below (if not already available) ----
-  today <- Sys.Date()
-  
-  dateformat <- format(today, "%Y%m%d")
+  # Use specified date or default to today
+  today <- if (is.null(date)) Sys.Date() else as.Date(date, format = "%Y%m%d")
   
   #### PREPARE ELIGIBLE NEW PATIENTS FOR IMPORT ####
-  
-  # 1. Subset away ineligible patients:
-  #    • Drop patients with a rescheduled visit (i.e. next_wcv_date is non-missing)
-  #    • Keep only those whose language is "en" or "es"
-  #    • Drop patients with missing/invalid phone numbers (home_phone or cell_phone empty or "000-000-0000")
-  #    • Drop the completedwcvdate and completedwcvtype variables.
-  
   df <- df %>%
     mutate(
-      nextwcvdate = if_else(
-        condition = !is.na(completedwcvdate),
-        true = completedwcvdate,
-        false = nextwcvdate
-      ),
-      nextwcvtype = if_else(
-        condition = completedwcvtype != "",
-        true = completedwcvtype,
-        false = nextwcvtype
-      )
+      nextwcvdate = if_else(!is.na(completedwcvdate), completedwcvdate, nextwcvdate),
+      nextwcvtype = if_else(completedwcvtype != "", completedwcvtype, nextwcvtype)
     ) 
   
   import_df <- df %>%
-    filter(is.na(nextwcvdate)) %>%        # drop if next_wcv_date exists
-    filter(language %in% c("en", "es")) %>%    # keep only rows with language "en" or "es"
-    filter(
-      !(home_phone == "" | 
-          is.na(home_phone) | 
-          home_phone == "000-000-0000")) %>%
+    filter(is.na(nextwcvdate)) %>%
+    filter(language %in% c("en", "es")) %>%
+    filter(!(home_phone == "" | is.na(home_phone) | home_phone == "000-000-0000")) %>%
     select(-completedwcvdate, -completedwcvtype)
   
-  
-  # 2. Generate form instance variable for REDCap
+  # Assign redcap_repeat_instance
   import_df <- import_df %>%
-    mutate(redcap_repeat_instance = 1) %>%          # same for all observations
+    mutate(redcap_repeat_instance = 1) %>%
     relocate(redcap_repeat_instance, .before = cellphone)
   
-  # Optionally, attach a variable label as an attribute:
-  attr(import_df$redcap_repeat_instance, "label") <- "REDCap instance for household, by home_phone"
-  
-  # 3. Identify multiple household members (adjust form instance)
-  #    – Tag duplicates based on home_phone and number them sequentially.
+  # Household duplicates
   import_df <- import_df %>%
     group_by(home_phone) %>%
     mutate(
-      dup_house_tag = if_else(n() > 1, 1L, 0L),      # tag duplicates: 1 if more than one obs per house
-      dup_house_id  = row_number()                    # sequence number within home_phone
+      dup_house_tag = if_else(n() > 1, 1L, 0L),
+      dup_house_id  = row_number()
     ) %>%
     ungroup() %>%
     mutate(
       dup_house_id = if_else(dup_house_tag == 0, 0L, dup_house_id),
-      redcap_repeat_instance = if_else(dup_house_id > 1,
-                                       dup_house_id,
-                                       redcap_repeat_instance)
+      redcap_repeat_instance = if_else(dup_house_id > 1, dup_house_id, redcap_repeat_instance)
     )
   
-  # 4. Drop temporary variables not needed for the import preparation.
-  #    (Some of these variables may have been created in earlier preparation steps.)
+  # Drop temp variables
   import_df <- import_df %>%
     select(-one_of("dup_3wk_house_tag", "dup_3wk_house_id", "dup_pat_tag",
                    "quick_dup_pat", "noshowdiff", "dup_house_tag", "dup_house_id"))
   
-  # 5. Add a form completion flag.
+  # Mark form as complete
   import_df <- import_df %>%
     mutate(form_1_complete = 1)
   
-  # 6. Drop specific patient advisor children by phone number.
+  # Drop advisor children
   import_df <- import_df %>%
     filter(!(home_phone %in% c("336-989-6601", "336-844-0038", 
                                "704-839-1413", "336-972-7994")))
   
   return(import_df)
 }
+

@@ -17,5 +17,6 @@ Imports:
     tidyverse,
     janitor,
     lubridate,
-    haven
+    haven,
+    purrr
 
