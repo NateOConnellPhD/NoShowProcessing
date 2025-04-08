@@ -41,6 +41,7 @@ run_program <- function(date = NULL) {
 
   message("📥 Importing today's raw data...")
   df <- import_df()
+  master_today$df = df
 
   message("🔧 Processing today's raw data...")
   df_proc <- process_df(df)
