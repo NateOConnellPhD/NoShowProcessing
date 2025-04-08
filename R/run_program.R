@@ -76,7 +76,7 @@ run_program <- function(date = NULL) {
   }
 
   message("💾 Saving updated files to disk...")
-  save_files(master_today, master)
+  save_files(master_today, master, date = date_string)
   message("🎉 Pipeline complete. All files saved successfully.")
 
   return(invisible("✅ All datasets match."))
