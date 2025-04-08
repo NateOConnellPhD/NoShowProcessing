@@ -22,11 +22,20 @@
 #' ensure_required_folders()
 #' ensure_required_folders(c("processed_data", "data", "import", "stata_data"))
 ensure_required_folders <- function(required_folders = c("processed_data", "data", "import")) {
+  created_any <- FALSE
+
   for (folder in required_folders) {
     if (!dir.exists(folder)) {
-      message("Creating folder: ", folder)
+      message("📁 Creating folder: ", folder)
       dir.create(folder, recursive = TRUE)
+      created_any <- TRUE
     }
   }
+
+  if (!created_any) {
+    message("✅ All folders exist.")
+  }
+
   invisible(TRUE)
 }
+
