@@ -10,7 +10,11 @@
 #' @param date Optional string in "YYYYMMDD" format. If NULL, selects the most recent weekday automatically.
 #' @param overwrite_master Logical. If TRUE, will overwrite the existing `master.rda` file.
 #'
-#' @return Saves two RDS files: one with date-stamped `master_today` list, one as the updated `master` list (if allowed).
+#' @return Saves two RDS files:
+#' \itemize{
+#'   \item `processed_data/YYYYMMDD_master.rda`: a date-specific daily master
+#'   \item `processed_data/master.rda`: the cumulative master (only if overwrite is allowed)
+#' }
 #' @export
 create_stata_master <- function(date = NULL, overwrite_master = FALSE) {
   # Determine most recent weekday if date is not supplied
@@ -25,12 +29,7 @@ create_stata_master <- function(date = NULL, overwrite_master = FALSE) {
   data_folder <- "stata_data/"
   xlsx_file <- paste0("stata_data/datarequest_1585_", date, ".xlsx")
   master_file <- "processed_data/master.rda"
-
-  # Check for existing master.rda
-  if (file.exists(master_file) && !overwrite_master) {
-    message("⚠️  master.rda already exists. Skipping overwrite. Use `overwrite_master = TRUE` to force update.")
-    return(invisible("Master already exists."))
-  }
+  dated_master_file <- paste0("processed_data/", date, "_master.rda")
 
   # Read .dta files
   dta_files <- list.files(path = data_folder, pattern = "\\.dta$", full.names = TRUE)
@@ -54,22 +53,26 @@ create_stata_master <- function(date = NULL, overwrite_master = FALSE) {
   master_today$prior_combine <- data_list[[paste0(as.character(as.numeric(date) - 1), "_import_combined")]]
   master_today$prior_review <- data_list[[paste0(date, "_import_priorreviewed")]]
 
-  # Build cumulative master
-  master <- list()
-  master$eligibles <- data_list$eligibles
-  master$inel <- list(
-    lang = data_list$ineligibles_lang,
-    nophone = data_list$ineligibles_nophone,
-    resched = data_list$ineligibles_resched
-  )
-  master$full <- data_list$full_import_list
+  # Save daily master file (always)
+  saveRDS(master_today, file = dated_master_file)
+  message("✅ Saved daily master as: ", dated_master_file)
 
-  # Save output files
-  saveRDS(master_today, file = paste0("processed_data/", date, "_master.rda"))
-  message("✅ Saved daily master as: ", paste0("processed_data/", date, "_master.rda"))
+  # Build and optionally save cumulative master
+  if (file.exists(master_file) && !overwrite_master) {
+    message("⚠️  master.rda already exists. Skipping overwrite. Use `overwrite_master = TRUE` to overwrite it.")
+  } else {
+    master <- list(
+      eligibles = data_list$eligibles,
+      inel = list(
+        lang = data_list$ineligibles_lang,
+        nophone = data_list$ineligibles_nophone,
+        resched = data_list$ineligibles_resched
+      ),
+      full = data_list$full_import_list
+    )
+    saveRDS(master, file = master_file)
+    message("✅ Saved updated cumulative master as: ", master_file)
+  }
 
-  saveRDS(master, file = master_file)
-  message("✅ Saved updated master list as: ", master_file)
-
-  return(invisible("Master files created."))
+  return(invisible("Stata master creation complete."))
 }
