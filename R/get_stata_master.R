@@ -26,20 +26,21 @@ create_stata_master <- function(date = NULL, overwrite_master = FALSE) {
   xlsx_file <- paste0("stata_data/datarequest_1585_", date, ".xlsx")
   master_file <- "processed_data/master.rda"
 
-  # Check for existing master file
+  # Check for existing master.rda
   if (file.exists(master_file) && !overwrite_master) {
-    stop("master.rda already exists. Set `overwrite_master = TRUE` to overwrite it.")
+    message("⚠️  master.rda already exists. Skipping overwrite. Use `overwrite_master = TRUE` to force update.")
+    return(invisible("Master already exists."))
   }
 
-  # Get list of all .dta files
+  # Read .dta files
   dta_files <- list.files(path = data_folder, pattern = "\\.dta$", full.names = TRUE)
-  data_list <- lapply(dta_files, read_dta)
+  data_list <- lapply(dta_files, haven::read_dta)
   names(data_list) <- sub("\\.dta$", "", basename(dta_files))
 
   # Read Excel data
   df_old <- readxl::read_xlsx(xlsx_file)
 
-  # Build master_today (date-specific)
+  # Build master_today
   master_today <- list()
   master_today$df <- df_old
   master_today$df_proc <- data_list[[paste0(date, "_all")]]
@@ -63,8 +64,12 @@ create_stata_master <- function(date = NULL, overwrite_master = FALSE) {
   )
   master$full <- data_list$full_import_list
 
-  # Save
+  # Save output files
   saveRDS(master_today, file = paste0("processed_data/", date, "_master.rda"))
-  saveRDS(master, file = master_file)
-}
+  message("✅ Saved daily master as: ", paste0("processed_data/", date, "_master.rda"))
 
+  saveRDS(master, file = master_file)
+  message("✅ Saved updated master list as: ", master_file)
+
+  return(invisible("Master files created."))
+}
