@@ -90,9 +90,9 @@ check_with_stata <- function(date = NULL) {
   message("🔍 Running cross-checks against reference files...")
   check <- crosscheck_data(master_today, new_master, date = date_string)
 
-  if (!isTRUE(check)) {
+  if(!isTRUE(check)) {
     warning("❌ One or more datasets do not match: ", paste(check, collapse = ", "))
-    return(invisible("❌ Datasets do not match.)")
+    return(invisible("❌ Datasets do not match.)"))
   } else{
     return(invisible("✅ All datasets match."))
   }
