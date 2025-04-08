@@ -1,32 +1,41 @@
-#' Load Reference .dta Files from data_check/
+#' Load All .dta Reference Files from data_check/
 #'
-#' This function reads all Stata `.dta` files in the `data_check/` folder for a given date prefix
-#' and returns them as a named list of data frames.
+#' This function loads all `.dta` files from the `data_check/` folder, including both
+#' files prefixed with a date (e.g., "20250408_all.dta") and static filenames
+#' (e.g., "eligibles.dta", "full_import_list.dta").
 #'
-#' @param date Optional string in "YYYYMMDD" format. If NULL, uses today's date.
+#' If a `date` is supplied, only date-prefixed files from that date and the non-date files
+#' will be returned. If NULL, all `.dta` files are loaded regardless of prefix.
 #'
-#' @return A named list of data frames loaded from `data_check/YYYYMMDD_*.dta`.
+#' @param date Optional string in "YYYYMMDD" format. If supplied, loads only that day's files
+#'             plus any non-prefixed .dta files. If NULL, loads all .dta files in folder.
+#'
+#' @return A named list of data frames.
 #' @export
 #'
 #' @examples
-#' check_data_list <- load_check_data("20250408")
-#' names(check_data_list)
-#' head(check_data_list$`20250408_all`)
+#' files <- load_check_data("20250408")
+#' names(files)
+#' head(files$`20250408_all`)
+
 load_check_data <- function(date = NULL) {
   require(haven)
 
-  # Determine date prefix
-  today <- if (is.null(date)) Sys.Date() else as.Date(date, format = "%Y%m%d")
-  date_string <- format(today, "%Y%m%d")
-
-  # List all .dta files that begin with the date
-  dta_files <- list.files("data_check/", pattern = paste0("^", date_string, ".*\\.dta$"), full.names = TRUE)
-
-  if (length(dta_files) == 0) {
-    stop("No matching .dta files found in 'data_check/' for date: ", date_string)
+  # Build pattern to match files
+  if (!is.null(date)) {
+    prefix_pattern <- paste0("^(", date, "_.*|[^0-9].*)\\.dta$")
+  } else {
+    prefix_pattern <- "\\.dta$"  # Load everything
   }
 
-  # Load each .dta file into a named list
+  # List matching .dta files
+  dta_files <- list.files("data_check/", pattern = prefix_pattern, full.names = TRUE)
+
+  if (length(dta_files) == 0) {
+    stop("No matching .dta files found in 'data_check/'", if (!is.null(date)) paste(" for date:", date))
+  }
+
+  # Load and name
   data_list <- lapply(dta_files, read_dta)
   names(data_list) <- sub("\\.dta$", "", basename(dta_files))
 
