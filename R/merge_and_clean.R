@@ -32,8 +32,8 @@
   merge_and_clean = function(master_today, master_prev, date){
 
     # Determine today's date and day of the week
-    today <- if (is.null(date)) Sys.Date() else as.Date(date, format = "%Y%m%d")
-    date_string <- format(today, "%Y%m%d")
+    today_date <- if (is.null(date)) Sys.Date() else as.Date(date, format = "%Y%m%d")
+    date_string <- format(today_date, "%Y%m%d")
 
     day_of_week <- wday(today, week_start = 1) # Monday = 1, Sunday = 7
 
