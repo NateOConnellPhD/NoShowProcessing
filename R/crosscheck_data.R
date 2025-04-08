@@ -1,65 +1,99 @@
-#' Check All Master Components Against Reference Files
+#' Run the full daily no-show trial data pipeline
 #'
-#' Compares output from `master_today` and `new_master` against .dta files in the "data_check/" folder.
+#' This function performs the full daily data processing workflow for the no-show trial.
+#' It reads in the most recent master files, processes new data, identifies eligibles
+#' and ineligibles, merges with prior data, performs cleaning steps, compares to reference datasets,
+#' and saves all relevant output files only if all data match.
 #'
-#' @param master_today A list containing components generated during today's processing.
-#' @param new_master A list containing the final processed full master object.
-#' @param date Optional date string in "YYYYMMDD" format. Defaults to today.
+#' Steps performed:
+#' \itemize{
+#'   \item Loads current and previous master datasets
+#'   \item Imports and processes today's raw data
+#'   \item Extracts no-show data from 7 days ago
+#'   \item Identifies ineligible patients (e.g., language, reschedule, no phone)
+#'   \item Identifies eligible patients
+#'   \item Merges today's data with prior reviewed data
+#'   \item Applies post-cleaning to prepare full import list
+#'   \item Compares against reference datasets
+#'   \item Saves updated outputs to disk (only if all match)
+#' }
 #'
-#' @return A message stating whether all datasets match and, if not, which components differ.
+#' @param date Optional date in "YYYYMMDD" format. If NULL, defaults to today's date.
+#' @return Returns "✅ All datasets match." or lists the mismatched datasets.
 #' @export
-crosscheck_data <- function(master_today, new_master, date = NULL) {
-  require(haven)
-  require(lubridate)
-  
-  # Load comparison function
-  if (!exists("compare_datasets")) {
-    stop("compare_datasets() function must be loaded in the environment.")
-  }
-  
-  # Format dates
+run_program <- function(date = NULL) {
+  message("🔄 Starting daily no-show trial data pipeline...")
+
+  # Format date
   today <- if (is.null(date)) Sys.Date() else as.Date(date, format = "%Y%m%d")
   date_string <- format(today, "%Y%m%d")
-  
-  # Get previous weekday for prior_combine
-  prev_date <- today - ifelse(wday(today) == 2, 3, 1)
-  prev_string <- format(prev_date, "%Y%m%d")
-  
-  # Helper for loading reference .dta
-  load_check_file <- function(name, date_prefix = date_string) {
-    path <- file.path("data_check", paste0(date_prefix, "_", name, ".dta"))
-    if (!file.exists(path)) stop(paste("Missing check file:", path))
-    read_dta(path)
+
+  # Load latest master_prev based on file naming pattern
+  master_files <- list.files("processed_data/", pattern = "_master\\.rda$", full.names = TRUE)
+  file_dates <- stringr::str_extract(master_files, "\\d{8}")
+  latest_index <- which.max(as.Date(file_dates, format = "%Y%m%d"))
+  master_prev <- readRDS(master_files[latest_index])
+  message("✅ Loaded most recent previous master file: ", basename(master_files[latest_index]))
+
+  # Load current master
+  master <- readRDS("processed_data/master.rda")
+  message("✅ Loaded current master file")
+
+  ##### Set up today's list ############
+  master_today <- list()
+
+  ###### Import data ##########
+  message("📥 Importing today's raw data...")
+  df <- import_df()
+
+  ###### Process Data #########
+  message("🔧 Processing today's raw data...")
+  df_proc <- process_df(df)
+  master_today$df_proc <- df_proc
+  message("✅ Processed data frame added to master_today$df_proc")
+
+  ###### Get 7-day data #########
+  message("📆 Extracting no-show data from 7 days ago...")
+  df_7day <- get_7_day(df_proc, date = date_string)
+  master_today$df_7day <- df_7day
+  message("✅ 7-day no-show data added to master_today$df_7day")
+
+  ###### Get ineligibles ########
+  message("🚫 Identifying ineligible patients...")
+  df_inels <- get_inels(df_7day, date = date_string)
+  master_today$inel <- df_inels
+  message("✅ Ineligible data stored in master_today$inel")
+
+  ######### Get eligibles ###########
+  message("✅ Identifying eligible patients for import...")
+  df_els <- get_eligible(df_7day, date = date_string)
+  master_today$eligibles <- df_els
+  message("✅ Eligible patients stored in master_today$eligibles")
+
+  ###### Merge and clean ###########
+  message("🔗 Merging today's data with prior reviewed data...")
+  df_merge <- merge_and_clean(master_today, master_prev)
+  master_today$prior_combine <- df_merge$prior_combined
+  master_today$prior_review <- df_merge$prior_review
+  message("✅ Merged data added to master_today$prior_combine and $prior_review")
+
+  ########## Post-cleaning ##############
+  message("🧹 Running post-cleaning steps...")
+  new_master <- new_master(master_today)
+  message("✅ Full import list created and stored in new_master")
+
+  ########## Cross-check with reference ##########
+  message("🔍 Running cross-checks against reference files...")
+  check <- crosscheck_data(master_today, new_master, date = date_string)
+
+  if (!is.null(last.warning) && any(grepl("not match", capture.output(last.warning)))) {
+    warning("❌ One or more datasets do not match. Review comparison logs above.")
+    return(invisible("❌ Datasets do not match. Not saved."))
   }
-  
-  # Build a list of comparisons
-  comparisons <- list(
-    df_proc            = list(master_today$df_proc, load_check_file("all")),
-    df_7day            = list(master_today$df_7day, load_check_file("7dayvisits")),
-    inel_lang          = list(master_today$inel$lang, load_check_file("ineligibles_lang")),
-    inel_resched       = list(master_today$inel$resched, load_check_file("ineligibles_resched")),
-    inel_nophone       = list(master_today$inel$nophone, load_check_file("ineligibles_nophone")),
-    eligibles          = list(master_today$eligibles, load_check_file("import_new")),
-    prior_combined     = list(master_today$prior_combine, load_check_file("import_combined", prev_string)),
-    prior_review       = list(master_today$prior_review, load_check_file("import_priorreviewed")),
-    full_import_list   = list(new_master$full, read_dta("data_check/full_import_list.dta")),
-    new_eligibles      = list(new_master$eligibles, read_dta("data_check/eligibles.dta")),
-    new_inel_lang      = list(new_master$inel$lang, read_dta("data_check/ineligibles_lang.dta")),
-    new_inel_resched   = list(new_master$inel$resched, read_dta("data_check/ineligibles_resched.dta")),
-    new_inel_nophone   = list(new_master$inel$nophone, read_dta("data_check/ineligibles_nophone.dta"))
-  )
-  
-  # Run all comparisons
-  failed <- purrr::keep(names(comparisons), function(nm) {
-    compare_datasets(comparisons[[nm]][[1]], comparisons[[nm]][[2]])
-    last_msg <- tail(capture.output(last.warning), 1)
-    grepl("not match", last_msg)
-  })
-  
-  # Output results
-  if (length(failed) == 0) {
-    message("✅ All datasets match.")
-  } else {
-    warning("❌ Datasets do not match.\n  Mismatched: ", paste(failed, collapse = ", "))
-  }
+
+  ######### Save files #############
+  message("💾 Saving updated files to disk...")
+  save_files(master_today, master)
+  message("🎉 Pipeline complete. All files saved successfully.")
+  return(invisible("✅ All datasets match."))
 }
