@@ -29,11 +29,13 @@
   #' @export
 
   ### This merges data with the previous days data and cleans it
-  merge_and_clean = function(master_today, master_prev){
+  merge_and_clean = function(master_today, master_prev, date){
 
     # Determine today's date and day of the week
-    today_date <- Sys.Date()
-    day_of_week <- wday(today_date, week_start = 1) # Monday = 1, Sunday = 7
+    today <- if (is.null(date)) Sys.Date() else as.Date(date, format = "%Y%m%d")
+    date_string <- format(today, "%Y%m%d")
+
+    day_of_week <- wday(today, week_start = 1) # Monday = 1, Sunday = 7
 
     # Get previous day(s)
     friday_date <- today_date - 3
