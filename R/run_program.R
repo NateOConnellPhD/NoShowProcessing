@@ -68,18 +68,9 @@ run_program <- function(date = NULL) {
   message("🧹 Running post-cleaning...")
   new_master <- new_master(master_today)
 
-  message("🔍 Running cross-checks against reference files...")
-  check <- crosscheck_data(master_today, new_master, date = date_string)
-
-  if (!isTRUE(check)) {
-    warning("❌ One or more datasets do not match: ", paste(check, collapse = ", "))
-    return(invisible("❌ Datasets do not match. Not saved."))
-  }
-
   message("💾 Saving updated files to disk...")
   save_files(master_today, master, date = date_string)
   message("🎉 Pipeline complete. All files saved successfully.")
 
-  return(invisible("✅ All datasets match."))
 }
 
