@@ -14,25 +14,25 @@ crosscheck_data <- function(master_today, new_master, date = NULL) {
 
   # Load comparison function
   if (!exists("compare_datasets")) {
-    stop("compare_datasets() function must be loaded in the environment.")
+    stop("compare_datasets() must be defined.")
   }
 
   # Format dates
   today <- if (is.null(date)) Sys.Date() else as.Date(date, format = "%Y%m%d")
   date_string <- format(today, "%Y%m%d")
 
-  # Get previous weekday for prior_combine
+  # Get previous weekday for prior_combined
   prev_date <- today - ifelse(wday(today) == 2, 3, 1)
   prev_string <- format(prev_date, "%Y%m%d")
 
-  # Helper for loading reference .dta
+  # Load helper
   load_check_file <- function(name, date_prefix = date_string) {
     path <- file.path("data_check", paste0(date_prefix, "_", name, ".dta"))
     if (!file.exists(path)) stop(paste("Missing check file:", path))
     read_dta(path)
   }
 
-  # Build a list of comparisons
+  # List of all comparisons to run
   comparisons <- list(
     df_proc            = list(master_today$df_proc, load_check_file("all")),
     df_7day            = list(master_today$df_7day, load_check_file("7dayvisits")),
@@ -49,17 +49,19 @@ crosscheck_data <- function(master_today, new_master, date = NULL) {
     new_inel_nophone   = list(new_master$inel$nophone, read_dta("data_check/ineligibles_nophone.dta"))
   )
 
-  # Run all comparisons
-  failed <- purrr::keep(names(comparisons), function(nm) {
-    compare_datasets(comparisons[[nm]][[1]], comparisons[[nm]][[2]])
-    last_msg <- tail(capture.output(last.warning), 1)
-    grepl("not match", last_msg)
+  # Actually run comparisons
+  mismatches <- purrr::keep(names(comparisons), function(name) {
+    res <- compare_datasets(comparisons[[name]][[1]], comparisons[[name]][[2]])
+    # If any column is not identical, we consider it a mismatch
+    !all(res$identical)
   })
 
-  # Output results
-  if (length(failed) == 0) {
+  # Report results
+  if (length(mismatches) == 0) {
     message("✅ All datasets match.")
+    return(TRUE)
   } else {
-    warning("❌ Datasets do not match.\n  Mismatched: ", paste(failed, collapse = ", "))
+    warning("❌ Datasets do not match: ", paste(mismatches, collapse = ", "))
+    return(mismatches)
   }
 }
