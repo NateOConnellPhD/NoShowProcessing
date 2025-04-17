@@ -25,14 +25,30 @@ run_program <- function(date = NULL) {
   message("🔄 Starting daily no-show trial data pipeline...")
 
   today <- if (is.null(date)) Sys.Date() else as.Date(date, format = "%Y%m%d")
+  # Format today’s date string
   date_string <- format(today, "%Y%m%d")
 
-  # Load latest master_prev
+  # Compute “previous” date: if Monday, go back to Friday; otherwise just go back one day
+  prev_date <- if (wday(today, week_start = 1) == 1) {
+    # wday(..., week_start=1) == 1 means Monday
+    today - days(3)
+  } else {
+    today - days(1)
+  }
+
+  # Format that into the same YYYYMMDD string
+  prev_date_string <- format(prev_date, "%Y%m%d")
+
+  # Now load the file matching prev_date_string
   master_files <- list.files("processed_data/", pattern = "_master\\.rda$", full.names = TRUE)
-  file_dates <- stringr::str_extract(master_files, "\\d{8}")
-  latest_index <- which.max(as.Date(file_dates, format = "%Y%m%d"))
-  master_prev <- readRDS(master_files[latest_index])
-  message("✅ Loaded most recent previous master file: ", basename(master_files[latest_index]))
+  file_dates   <- str_extract(master_files, "\\d{8}")
+
+  prev_index <- which(file_dates == prev_date_string)
+  if (length(prev_index) == 0) {
+    stop("❌ No master_prev file found for date ", prev_date_string)
+  }
+  master_prev <- readRDS(master_files[prev_index])
+  message("✅ Loaded Previous day Master File", prev_date_string, ": ", basename(master_files[prev_index]))
 
   master <- readRDS("processed_data/master.rda")
   message("✅ Loaded current master file")
