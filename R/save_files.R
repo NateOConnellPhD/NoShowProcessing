@@ -27,6 +27,13 @@ save_files <- function(master_today, master, date = NULL) {
   date_actual <- if (is.null(date)) Sys.Date() else as.Date(date, format = "%Y%m%d")
   dateformat <- format(date_actual, "%Y%m%d")
 
+  #exclude key variables for import
+  excVars = c("completedwcvdate", "completedwcvtype", "diff_next_wcv_date",
+             "diff_next_wcv_entry_date", "diff_next_wcv_type")
+
+  prior_review_temp <- master_today$prior_review %>%
+    select(-all_of(excVars))
+
   # Save import files
   write.csv(master_today$prior_review,
             file = paste0("import/", dateformat, "_import_priorreviewed.csv"),
