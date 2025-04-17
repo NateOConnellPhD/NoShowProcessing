@@ -31,7 +31,7 @@
 
 post_clean <- function(master_today, master, date) {
   # Parse the specified run date (YYYYMMDD)
-  run_date <- as.Date(date_string, format = "%Y%m%d")
+  run_date <- as.Date(date, format = "%Y%m%d")
   if (is.na(run_date)) {
     stop("`date_string` must be in YYYYMMDD format, e.g. '20250417'")
   }
