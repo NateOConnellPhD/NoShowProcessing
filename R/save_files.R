@@ -35,7 +35,7 @@ save_files <- function(master_today, master, date = NULL) {
     select(-all_of(excVars))
 
   # Save import files
-  write.csv(master_today$prior_review,
+  write.csv(prior_review_temp,
             file = paste0("import/", dateformat, "_import_priorreviewed.csv"),
             row.names = FALSE)
 

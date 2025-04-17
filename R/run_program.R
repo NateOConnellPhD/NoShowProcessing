@@ -85,7 +85,7 @@ run_program <- function(date = NULL) {
   new_master <- new_master(master_today)
 
   message("💾 Saving updated files to disk...")
-  save_files(master_today, master, date = date_string)
+  save_files(master_today, new_master, date = date_string)
   message("🎉 Pipeline complete. All files saved successfully.")
 
 }
