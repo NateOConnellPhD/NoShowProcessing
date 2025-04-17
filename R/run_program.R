@@ -82,6 +82,10 @@ run_program <- function(date = NULL) {
   master_today$prior_review <- df_merge$prior_review
 
   message("🧹 Running post-cleaning...")
+  post = post_clean(master_today, master, date=date_string)
+  master_today$eligibles = post$new
+
+  message("🧹 Updating Master File ...")
   new_master <- new_master(master_today)
 
   message("💾 Saving updated files to disk...")
