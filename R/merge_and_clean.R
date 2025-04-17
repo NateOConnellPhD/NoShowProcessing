@@ -95,7 +95,7 @@
 
     # Retain latest values where prior info is missing, and vice versa
     comparison_df <- comparison_df %>%
-      group_by(home_phone, pat_first_name, datenoshow) %>%
+      group_by(home_phone, pat_first_name, timenoshow_24hr) %>%
       mutate(
         nextwcvdate = {
           v1 <- nextwcvdate[.source == "today"]
