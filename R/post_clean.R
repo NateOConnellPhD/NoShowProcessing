@@ -6,7 +6,7 @@
 #'
 #' @param master_today A list containing today's cleaned data, with at least a `master_today$eligibles` data frame.
 #' @param master A list containing historical data, including `master$full`, the full import list from previous days.
-#' @param date_string A date in the format of YYYYMMDD provided for the date of the data being ran/processed
+#' @param date A date in the format of YYYYMMDD provided for the date of the data being ran/processed
 #' @return A list of the data frame combining the cleaned historical data and today's cleaned eligibles, with updates to
 #'         `redcap_repeat_instance`, phone numbers, and other REDCap-ready fields; Additionally todays new data w/ updated redcap
 #'         repeat instances
@@ -29,7 +29,7 @@
 #' updated_list <- post_clean(master_today, master)
 #' }
 
-post_clean <- function(master_today, master, date_string) {
+post_clean <- function(master_today, master, date) {
   # Parse the specified run date (YYYYMMDD)
   run_date <- as.Date(date_string, format = "%Y%m%d")
   if (is.na(run_date)) {
