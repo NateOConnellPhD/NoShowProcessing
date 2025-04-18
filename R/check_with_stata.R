@@ -80,12 +80,17 @@ check_with_stata <- function(date = NULL) {
   master_today$eligibles <- df_els
 
   message("🔗 Merging today's data with prior reviewed data...")
-  df_merge <- merge_and_clean(master_today, master_prev, date= date_string)
+  df_merge <- merge_and_clean(master_today, master_prev, date=date_string)
   master_today$prior_combine <- df_merge$prior_combined
   master_today$prior_review <- df_merge$prior_review
 
   message("🧹 Running post-cleaning...")
-  new_master <- new_master(master_today)
+  post = post_clean(master_today, master, date=date_string)
+  master_today$eligibles = post$new
+  master$full = post$full
+
+  message("🧹 Updating Master File ...")
+  new_master <- new_master(master_today, master)
 
   message("🔍 Running cross-checks against reference files...")
   check <- crosscheck_data(master_today, new_master, date = date_string)
