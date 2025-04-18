@@ -86,7 +86,7 @@ run_program <- function(date = NULL) {
   master_today$eligibles = post$new
 
   message("🧹 Updating Master File ...")
-  new_master <- new_master(master_today)
+  new_master <- new_master(master_today, master)
 
   message("💾 Saving updated files to disk...")
   save_files(master_today, new_master, date = date_string)
