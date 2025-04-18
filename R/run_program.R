@@ -84,6 +84,7 @@ run_program <- function(date = NULL) {
   message("🧹 Running post-cleaning...")
   post = post_clean(master_today, master, date=date_string)
   master_today$eligibles = post$new
+  master$full = post$full
 
   message("🧹 Updating Master File ...")
   new_master <- new_master(master_today, master)
