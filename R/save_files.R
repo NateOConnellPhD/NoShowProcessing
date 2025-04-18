@@ -34,6 +34,10 @@ save_files <- function(master_today, master, date = NULL) {
   prior_review_temp <- master_today$prior_review %>%
     select(-all_of(excVars))
 
+  prior_review_temp <- prior_review_temp %>%
+    # move redcap_repeat_instance so it comes *after* the 3rd column (i.e. into slot 4)
+    relocate(redcap_repeat_instance, .after = 3)
+
   today = master_today$eligibles
 
   #edit timestamps
