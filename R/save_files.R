@@ -43,8 +43,8 @@ save_files <- function(master_today, master, date = NULL) {
   prior_review_temp$timenoshow_24hr = format(prior_review_temp$timenoshow_24hr, "%H:%M:%S")
   prior_review_temp$timenoshow = format(prior_review_temp$timenoshow, "%I:%M %p")
 
-  today[is.na(today)] = ""
-  prior_review_temp[is.na(prior_review_temp)] = ""
+  #today[is.na(today)] = ""
+  #prior_review_temp[is.na(prior_review_temp)] = ""
 
   # Save import files
   write.csv(prior_review_temp,
