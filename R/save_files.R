@@ -48,7 +48,7 @@ save_files <- function(master_today, master, date = NULL) {
             file = paste0("import/", dateformat, "_import_priorreviewed.csv"),
             row.names = FALSE)
 
-  write.csv(master_today$eligibles,
+  write.csv(today,
             file = paste0("import/", dateformat, "_import_new.csv"),
             row.names = FALSE)
 
