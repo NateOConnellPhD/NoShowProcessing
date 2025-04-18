@@ -34,6 +34,15 @@ save_files <- function(master_today, master, date = NULL) {
   prior_review_temp <- master_today$prior_review %>%
     select(-all_of(excVars))
 
+  today = master_today$eligibles
+
+  #edit timestamps
+  today$timenoshow_24hr = format(today$timenoshow_24hr, "%H:%M:%S")
+  today$timenoshow = format(today$timenoshow, "%I:%M %p")
+
+  prior_review_temp$timenoshow_24hr = format(prior_review_temp$timenoshow_24hr, "%H:%M:%S")
+  prior_review_temp$timenoshow = format(prior_review_temp$timenoshow, "%I:%M %p")
+
   # Save import files
   write.csv(prior_review_temp,
             file = paste0("import/", dateformat, "_import_priorreviewed.csv"),
