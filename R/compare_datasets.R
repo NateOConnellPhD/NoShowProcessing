@@ -24,7 +24,7 @@
 #'
 compare_datasets <- function(df1, df2, show_diff = FALSE) {
 
-  myVars= c("home_phone", "twilio_phone", "site", "visitstatus")
+  myVars= c("home_phone", "twilio_phone", "site", "visitstatus", "redcap_repeat_instance")
   df1 = df1[myVars]
   df2 = df2[myVars]
 
