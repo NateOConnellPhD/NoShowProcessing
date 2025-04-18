@@ -43,8 +43,20 @@ save_files <- function(master_today, master, date = NULL) {
   prior_review_temp$timenoshow_24hr = format(prior_review_temp$timenoshow_24hr, "%H:%M:%S")
   prior_review_temp$timenoshow = format(prior_review_temp$timenoshow, "%I:%M %p")
 
-  today[is.na(today)] <- ""
-  prior_review_temp[is.na(prior_review_temp)] <- ""
+  # Function to turn all columns to character and blank‐out NAs
+  blank_na_cols <- function(df) {
+    df[] <- lapply(df, function(col) {
+      col <- as.character(col)
+      col[is.na(col)] <- ""
+      col
+    })
+    df
+  }
+
+  # Apply to both data frames
+  today              <- blank_na_cols(today)
+  prior_review_temp  <- blank_na_cols(prior_review_temp)
+
 
   # Save import files
   write.csv(prior_review_temp,
