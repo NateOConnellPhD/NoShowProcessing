@@ -22,7 +22,7 @@
 #'
 #' @seealso \code{\link{new_master}}, \code{\link{post_clean}}, \code{\link{run_program}}
 #' @export
-save_files <- function(master_today, master, date = NULL) {
+save_files <- function(master_today, master, master_old, date = NULL) {
   # Determine date
   date_actual <- if (is.null(date)) Sys.Date() else as.Date(date, format = "%Y%m%d")
   dateformat <- format(date_actual, "%Y%m%d")
@@ -62,6 +62,11 @@ save_files <- function(master_today, master, date = NULL) {
   today              <- blank_na_cols(today)
   prior_review_temp  <- blank_na_cols(prior_review_temp)
 
+  ### process previously saved data with language and site already in the system
+  today$language = ifelse(today$twilio_phone %in% master_old$full$twilio_phone, "",today$language)
+  prior_review_temp$language = ifelse(prior_review_temp$twilio_phone %in% master_old$full$twilio_phone, "", prior_review_temp$language)
+  today$site= ifelse(today$twilio_phone %in% master_old$full$twilio_phone, "",today$site)
+  prior_review_temp$site = ifelse(prior_review_temp$twilio_phone %in% master_old$full$twilio_phone, "", prior_review_temp$site)
 
   # Save import files
   write.csv(prior_review_temp,
