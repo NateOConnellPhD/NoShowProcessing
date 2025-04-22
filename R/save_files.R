@@ -41,11 +41,18 @@ save_files <- function(master_today, master, date = NULL) {
   today = master_today$eligibles
 
   #edit timestamps
-  today$timenoshow_24hr = format(today$timenoshow_24hr, "%H:%M:%S")
-  today$timenoshow = format(today$timenoshow, "%I:%M %p")
+  today$timenoshow_24hr <- sub("^\\s", "", format(today$timenoshow_24hr, "%k:%M"))
+  today$timenoshow <- sub("^0", "", format(today$timenoshow, "%I:%M %p"))
 
-  prior_review_temp$timenoshow_24hr = format(prior_review_temp$timenoshow_24hr, "%H:%M:%S")
-  prior_review_temp$timenoshow = format(prior_review_temp$timenoshow, "%I:%M %p")
+  prior_review_temp$timenoshow_24hr <- sub("^\\s", "", format(prior_review_temp$timenoshow_24hr, "%k:%M"))
+  prior_review_temp$timenoshow <- sub("^0", "", format(prior_review_temp$timenoshow, "%I:%M %p"))
+
+
+
+  today$language = ifelse(as.numeric(today$redcap_repeat_instance)>1, "", today$language)
+  prior_review_temp$language = ifelse(as.numeric(prior_review_temp$redcap_repeat_instance)>1, "", prior_review_temp$language)
+
+
 
   # Function to turn all columns to character and blank‐out NAs
   blank_na_cols <- function(df) {
@@ -60,6 +67,9 @@ save_files <- function(master_today, master, date = NULL) {
   # Apply to both data frames
   today              <- blank_na_cols(today)
   prior_review_temp  <- blank_na_cols(prior_review_temp)
+
+  today$language = ifelse(as.numeric(today$redcap_repeat_instance)>1, "", today$language)
+  prior_review_temp$language = ifelse(as.numeric(prior_review_temp$redcap_repeat_instance)>1, "", prior_review_temp$language)
 
 
   # Save import files
