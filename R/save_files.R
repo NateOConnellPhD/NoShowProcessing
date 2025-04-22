@@ -62,9 +62,6 @@ save_files <- function(master_today, master, date = NULL) {
   today              <- blank_na_cols(today)
   prior_review_temp  <- blank_na_cols(prior_review_temp)
 
-  today$language = ifelse(as.numeric(today$redcap_repeat_instance)>1, "", today$language)
-  prior_review_temp$language = ifelse(as.numeric(prior_review_temp$redcap_repeat_instance)>1, "", prior_review_temp$language)
-
 
   # Save import files
   write.csv(prior_review_temp,
