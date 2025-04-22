@@ -83,15 +83,18 @@ run_program <- function(date = NULL) {
 
   message("🧹 Running post-cleaning...")
   post = post_clean(master_today, master, date=date_string)
-  post$new$language = ifelse(post$new$twilio_phone %in% master$full$twilio_phone, "", post$new$language)
-  master_today$prior_review$language = ifelse(master_today$prior_review$twilio_phone %in% master$full$twilio_phone, "", master_today$prior_review$language)
-  post$new$site= ifelse(post$new$twilio_phone %in% master$full$twilio_phone, "", post$new$site)
-  master_today$prior_review$site = ifelse(master_today$prior_review$twilio_phone %in% master$full$twilio_phone, "", master_today$prior_review$site)
+  master_old = master
   master_today$eligibles = post$new
   master$full = post$full
 
   message("🧹 Updating Master File ...")
   new_master <- new_master(master_today, master)
+
+  ### process previously saved data with language and site already in the system
+  master_today$eligibles$language = ifelse(post$new$twilio_phone %in% master_old$full$twilio_phone, "",master_today$eligibles$language)
+  master_today$prior_review$language = ifelse(master_today$prior_review$twilio_phone %in% master_old$full$twilio_phone, "", master_today$prior_review$language)
+  master_today$eligibles$site= ifelse(post$new$twilio_phone %in% master_old$full$twilio_phone, "", master_today$eligibles$site)
+  master_today$prior_review$site = ifelse(master_today$prior_review$twilio_phone %in% master_old$full$twilio_phone, "", master_today$prior_review$site)
 
   message("💾 Saving updated files to disk...")
   save_files(master_today, new_master, date = date_string)
