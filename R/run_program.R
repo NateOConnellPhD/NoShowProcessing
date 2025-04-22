@@ -83,6 +83,10 @@ run_program <- function(date = NULL) {
 
   message("🧹 Running post-cleaning...")
   post = post_clean(master_today, master, date=date_string)
+  post$new$language = ifelse(post$new$twilio_phone %in% master$full$twilio_phone, "", post$new$language)
+  master_today$prior_review$language = ifelse(master_today$prior_review$twilio_phone %in% master$full$twilio_phone, "", master_today$prior_review$language)
+  post$new$site= ifelse(post$new$twilio_phone %in% master$full$twilio_phone, "", post$new$site)
+  master_today$prior_review$site = ifelse(master_today$prior_review$twilio_phone %in% master$full$twilio_phone, "", master_today$prior_review$site)
   master_today$eligibles = post$new
   master$full = post$full
 

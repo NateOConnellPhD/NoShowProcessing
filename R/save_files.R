@@ -48,12 +48,6 @@ save_files <- function(master_today, master, date = NULL) {
   prior_review_temp$timenoshow <- sub("^0", "", format(prior_review_temp$timenoshow, "%I:%M %p"))
 
 
-
-  today$language = ifelse(as.numeric(today$redcap_repeat_instance)>1, "", today$language)
-  prior_review_temp$language = ifelse(as.numeric(prior_review_temp$redcap_repeat_instance)>1, "", prior_review_temp$language)
-
-
-
   # Function to turn all columns to character and blank‐out NAs
   blank_na_cols <- function(df) {
     df[] <- lapply(df, function(col) {
