@@ -45,15 +45,6 @@ post_clean <- function(master_today, master, date) {
     master$full         %>% mutate(today = FALSE)
   )
 
-  ### Household‐level grouping & duplicate flags ###
-  data_new <- data_new %>%
-    arrange(home_phone, datenoshow, timenoshow_24hr) %>%
-    group_by(home_phone) %>%
-    mutate(
-      count_household  = cur_group_id(),
-      repeat_household = n()
-    ) %>%
-    ungroup()
 
   ### Patient‐level grouping & duplicate flags ###
   data_new <- data_new %>%
@@ -81,6 +72,19 @@ post_clean <- function(master_today, master, date) {
       home_phone = if_else(!is.na(pat_diffphone), first(home_phone), home_phone)
     ) %>%
     ungroup()
+
+
+  ### Household‐level grouping & duplicate flags ###
+  data_new <- data_new %>%
+    arrange(home_phone, datenoshow, timenoshow_24hr) %>%
+    group_by(home_phone) %>%
+    mutate(
+      count_household  = cur_group_id(),
+      repeat_household = n()
+    ) %>%
+    ungroup()
+
+
 
   ### Household‐level phone & site corrections ###
   data_new <- data_new %>%
