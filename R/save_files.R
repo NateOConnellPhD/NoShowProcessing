@@ -58,7 +58,6 @@ save_files <- function(master_today, master, master_old, date = NULL) {
     df
   }
 
-
   ### process previously saved data with language and site already in the system
   today$language = ifelse(today$twilio_phone %in% master_old$full$twilio_phone, "",today$language)
   prior_review_temp$language = ifelse(prior_review_temp$twilio_phone %in% master_old$full$twilio_phone, "", prior_review_temp$language)
