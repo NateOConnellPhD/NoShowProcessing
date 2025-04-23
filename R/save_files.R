@@ -58,9 +58,6 @@ save_files <- function(master_today, master, master_old, date = NULL) {
     df
   }
 
-  # Apply to both data frames
-  today              <- blank_na_cols(today)
-  prior_review_temp  <- blank_na_cols(prior_review_temp)
 
   ### process previously saved data with language and site already in the system
   today$language = ifelse(today$twilio_phone %in% master_old$full$twilio_phone, "",today$language)
@@ -78,6 +75,11 @@ save_files <- function(master_today, master, master_old, date = NULL) {
     as.POSIXct(prior_review_temp$next_wcv_entry_date, format = "%Y-%m-%d %H:%M"),
     unit = "minute"
   )
+
+  # Apply to both data frames
+  today              <- blank_na_cols(today)
+  prior_review_temp  <- blank_na_cols(prior_review_temp)
+
 
   # Save import files
   write.csv(prior_review_temp,
