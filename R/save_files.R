@@ -68,6 +68,10 @@ save_files <- function(master_today, master, master_old, date = NULL) {
   today$site= ifelse(today$twilio_phone %in% master_old$full$twilio_phone, "",today$site)
   prior_review_temp$site = ifelse(prior_review_temp$twilio_phone %in% master_old$full$twilio_phone, "", prior_review_temp$site)
 
+  prior_review_temp$nextwcvdate <- floor_date(prior_review_temp$nextwcvdate, unit = "minute")
+  prior_review_temp$next_wcv_entry_date <- floor_date(prior_review_temp$next_wcv_entry_date, unit = "minute")
+
+
   # Save import files
   write.csv(prior_review_temp,
             file = paste0("import/", dateformat, "_import_priorreviewed.csv"),
