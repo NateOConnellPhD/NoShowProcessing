@@ -70,7 +70,6 @@ save_files <- function(master_today, master, master_old, date = NULL) {
     floor_date(unit = "minute") |>
     format("%Y-%m-%d %I:%M")
 
-
   prior_review_temp$next_wcv_entry_date <- floor_date(
     as.POSIXct(prior_review_temp$next_wcv_entry_date, format = "%Y-%m-%d %H:%M"),
     unit = "minute"
@@ -79,7 +78,6 @@ save_files <- function(master_today, master, master_old, date = NULL) {
   # Apply to both data frames
   today              <- blank_na_cols(today)
   prior_review_temp  <- blank_na_cols(prior_review_temp)
-
 
   # Save import files
   write.csv(prior_review_temp,
