@@ -98,22 +98,22 @@
       group_by(home_phone, pat_first_name, timenoshow_24hr) %>%
       mutate(
         nextwcvdate = {
-          v1 <- nextwcvdate[.source == "today"]
-          v2 <- nextwcvdate[.source == "prior"]
+          v1 <- nextwcvdate[.source == "prior"]
+          v2 <- nextwcvdate[.source == "today"]
           if (length(v1) == 0) v1 <- NA
           if (length(v2) == 0) v2 <- NA
           coalesce(v1, v2)
         },
         next_wcv_entry_date = {
-          v1 <- next_wcv_entry_date[.source == "today"]
-          v2 <- next_wcv_entry_date[.source == "prior"]
+          v1 <- next_wcv_entry_date[.source == "prior"]
+          v2 <- next_wcv_entry_date[.source == "today"]
           if (length(v1) == 0) v1 <- NA
           if (length(v2) == 0) v2 <- NA
           coalesce(v1, v2)
         },
         nextwcvtype = {
-          v1 <- nextwcvtype[.source == "today"]
-          v2 <- nextwcvtype[.source == "prior"]
+          v1 <- nextwcvtype[.source == "prior"]
+          v2 <- nextwcvtype[.source == "today"]
           if (length(v1) == 0) v1 <- ""
           if (length(v2) == 0) v2 <- ""
           coalesce(v1, v2)
